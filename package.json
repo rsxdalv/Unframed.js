@@ -6,9 +6,10 @@
   "dependencies": {},
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "prestart": "tsc",
-    "start": "node framework.js"
+    "start": "node serve.js",
+    "pretest": "tsc",
+    "test": "mocha"
   },
   "keywords": [
     "web",

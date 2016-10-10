@@ -1,0 +1,1 @@
+main = require('./framework').main()

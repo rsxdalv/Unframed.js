@@ -1,57 +1,67 @@
 /// <reference path="node_modules/@types/node/index.d.ts" />
 /// <reference path="index.d.ts" />
 
+type mw = { req: IncomingMessage, res: ServerResponse }
+type mwp = Promise<mw>
+
 import * as http from 'http'
 import * as responseTime from 'response-time'
 import * as serveFavicon from 'serve-favicon'
 import { IncomingMessage, ServerResponse } from 'http'
 import * as morgan from 'morgan'
 
-let main = function () {
+export let main = function () {
     http.createServer(function parser(req: IncomingMessage, res: ServerResponse) {
-        cascade(Promise.resolve({ req, res }))
+        newCascade({ req, res })
+        // newCascade(Promise.resolve({ req, res }))
     }).listen(3000, 'localhost')
-} ()
-
-type mw = { req: IncomingMessage, res: ServerResponse }
-type mwp = Promise<mw>
-
-function pre(mw: mw): mw {
-    console.log('pre'); return mw
 }
 
-function post(mw: mw): mw {
-    console.log('post'); return mw
+export function roll(a: any, mw: mw) {
+    let i = a(mw)
+    let f = i.next.bind(i)
+    return function() {
+        let {value} = f()
+        return value
+    }
 }
 
-function cascade(Promise: mwp) {
+export let timer = function* (o: mw) {
+    let start = Date.now();
+    o = yield o;
+    let ms = Date.now() - start;
+    console.log('ms: %s', ms);
+    // console.log('%s %s - %s', this.method, this.url, ms);
+}
 
+export function collapse(Promise: mwp, infix) {
     // Pre
     let start
-    let first = Promise.then(function (o) {
+    return infix(Promise.then(function (o) {
         start = new Date;
         return o
-    })
-    // infix
-    let infix = server(first)
-    // let infix = server(Promise)
-    // Post
-    let ms
-    let last = infix.then(function ({req, res}: mw) {
-        ms = new Date as any - start;
+    })).then(function ({req, res}: mw) {
+        let ms = new Date as any - start;
         console.log('%s %s - %s', req.method, req.url, ms);
     })
-    return last
-}
-function server(Promise: Promise<{ req: IncomingMessage, res: ServerResponse }>) {
-    return Promise
-        // .then(favicon)
-        .then(thenify(morgan('combined')))
-        .then(({req, res}) => { res.write('Hello'); return { req, res } })
-        .then(({req, res}) => { res.end(' promises!'); return { req, res } })
 }
 
-let thenify = function (middleware) {
+export function bind(cc, start: mwp, infix: (mwp) => mwp) {
+    return infix(start.then(cc)).then(cc)
+}
+
+export function newCascade(flow: mw) {
+    return bind(
+        roll(timer, flow),
+        // mw => {
+        //     console.log('preafter')
+        //     return mw
+        // },
+        Promise.resolve(flow),
+        server)
+}
+
+export let thenify = function (middleware) {
     return function ({req, res}) {
         return new Promise((resolve, reject) => {
             middleware(req, res, function () {
@@ -61,15 +71,12 @@ let thenify = function (middleware) {
     }
 }
 
-let favicon = thenify(serveFavicon('./favicon-bicycle.ico'))
-let rt = thenify(responseTime)
+export let favicon = thenify(serveFavicon('./favicon-bicycle.ico'))
+export let rt = thenify(responseTime)
 
-function parser(req: IncomingMessage, res: ServerResponse) {
-    Promise.resolve({ req, res })
-        .then(favicon)
-        .then(thenify(morgan('combined')))
+export function server(flow: Promise<{ req: IncomingMessage, res: ServerResponse }>) {
+    return flow
+        // .then(thenify(morgan('combined')))
         .then(({req, res}) => { res.write('Hello'); return { req, res } })
-        .then(({req, res}) => { res.write(', oh hi again '); return { req, res } })
-        .then(({req, res}) => res.end(' hack'))
-
+        .then(({req, res}) => { res.end(' promises!'); return { req, res } })
 }
