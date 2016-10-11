@@ -10,11 +10,11 @@ exports.main = function () {
         // newCascade(Promise.resolve({ req, res }))
     }).listen(3000, 'localhost');
 };
-function roll(a, mw) {
-    let i = a(mw);
-    let f = i.next.bind(i);
-    return function () {
-        let { value } = f();
+function roll(generator) {
+    let i;
+    return function (o) {
+        i = i || generator(o);
+        let { value } = i.next(o);
         return value;
     };
 }
@@ -24,6 +24,7 @@ exports.timer = function* (o) {
     o = yield o;
     let ms = Date.now() - start;
     console.log('ms: %s', ms);
+    return o;
     // console.log('%s %s - %s', this.method, this.url, ms);
 };
 function collapse(Promise, infix) {
@@ -43,7 +44,7 @@ function bind(cc, start, infix) {
 }
 exports.bind = bind;
 function newCascade(flow) {
-    return bind(roll(exports.timer, flow), 
+    return bind(roll(exports.timer), 
     // mw => {
     //     console.log('preafter')
     //     return mw

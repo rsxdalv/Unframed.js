@@ -6,7 +6,9 @@ describe('roll', function () {
         let start = 557;
         let f = _.roll(function* (start) {
             yield start;
-        }, start);
-        chai_1.expect(f()).to.equal(start);
+            return start;
+        });
+        chai_1.expect(f(start)).to.equal(start);
+        chai_1.expect(f(start)).to.equal(start);
     });
 });

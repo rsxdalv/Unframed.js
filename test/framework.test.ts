@@ -9,7 +9,9 @@ describe('roll', function () {
         let start = 557
         let f = _.roll(function* (start) {
             yield start;
-        }, start as any)
-        expect(f()).to.equal(start)
+            return start;
+        })
+        expect(f(start)).to.equal(start) // First call
+        expect(f(start)).to.equal(start) // Second call
     })
 })

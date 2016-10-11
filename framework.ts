@@ -12,52 +12,36 @@ import * as morgan from 'morgan'
 
 export let main = function () {
     http.createServer(function parser(req: IncomingMessage, res: ServerResponse) {
-        newCascade({ req, res })
-        // newCascade(Promise.resolve({ req, res }))
+        // newCascade({ req, res })
+        newCascade(Promise.resolve({ req, res }))
     }).listen(3000, 'localhost')
 }
 
-export function roll(a: any, mw: mw) {
-    let i = a(mw)
-    let f = i.next.bind(i)
-    return function() {
-        let {value} = f()
+export function roll(generator: any) {
+    let i
+    return function(o) {
+        i = i || generator(o)
+        let {value} = i.next(o)
         return value
     }
 }
 
-export let timer = function* (o: mw) {
+export let timer = function* ({req, res}: mw) {
     let start = Date.now();
-    o = yield o;
+    let {_req, _res} = yield {req, res};
     let ms = Date.now() - start;
-    console.log('ms: %s', ms);
-    // console.log('%s %s - %s', this.method, this.url, ms);
-}
-
-export function collapse(Promise: mwp, infix) {
-    // Pre
-    let start
-    return infix(Promise.then(function (o) {
-        start = new Date;
-        return o
-    })).then(function ({req, res}: mw) {
-        let ms = new Date as any - start;
-        console.log('%s %s - %s', req.method, req.url, ms);
-    })
+    console.log('%s %s ms: %s', req.method, req.url, ms);
+    return {_req, _res}
 }
 
 export function bind(cc, start: mwp, infix: (mwp) => mwp) {
     return infix(start.then(cc)).then(cc)
 }
 
-export function newCascade(flow: mw) {
+export function newCascade(flow: mwp) {
     return bind(
-        roll(timer, flow),
-        // mw => {
-        //     console.log('preafter')
-        //     return mw
-        // },
-        Promise.resolve(flow),
+        roll(timer),
+        flow,
         server)
 }
 
