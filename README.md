@@ -1,3 +1,10 @@
+# A post-mortem comment (aka an edit)
+This framework is generally about using monads in javascript to construct 
+a bound web server that combines the nature of asynchronous computation for
+webservers with the middleware seen as monoidal composition. And, because of
+JavaScripts async style (and prior art) the preference is to do everything in
+a monad so that there's no flatmap and map distinction.
+
 # unframed
 ## Least a framework can probably be
 
